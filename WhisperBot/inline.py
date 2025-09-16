@@ -14,169 +14,155 @@ from WhisperBot.database.users_sql import Users
 from WhisperBot.database import SESSION
 from WhisperBot.bot_users import check_for_users
 
-
 main = [
     InlineQueryResultArticle(
-        title="Whisper Bot",
-        input_message_content=InputTextMessageContent("Write Target User's @username or id at the end of your message."),
+        title="Fısıltı Botu",
+        input_message_content=InputTextMessageContent(
+            "Mesajınızın sonuna alıcı kullanıcının @username veya ID'sini yazın."
+        ),
         url="https://t.me/StarkBots",
-        description="Write Target User's @username or id at the end of your message.",
+        description="Mesajınızın sonuna alıcı kullanıcının @username veya ID'sini yazın.",
         thumb_url="https://telegra.ph/file/33af12f457b16532e1383.jpg",
         reply_markup=InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("Learn More", url="https://t.me/WhisperStarkBot?start=start")],
-                [InlineKeyboardButton("🔒 Send a Whisper 🔒", switch_inline_query="")],
-                [InlineKeyboardButton("♥ More Amazing bots ♥", url="https://t.me/StarkBots")]
+                [InlineKeyboardButton("Daha Fazla Bilgi", url="https://t.me/WhisperStarkBot?start=start")],
+                [InlineKeyboardButton("🔒 Fısıltı Gönder 🔒", switch_inline_query="")],
+                [InlineKeyboardButton("♥ Daha Fazla Harika Bot ♥", url="https://t.me/StarkBots")]
             ]
         ),
     )
 ]
 
-
 @Client.on_chosen_inline_result()
 async def _chosen(bot: Client, result: ChosenInlineResult):
-    if result.query == "":
+    if not result.query:
         return
-    sender = result.from_user.id
-    specific = result.inline_message_id
+    sender_id = result.from_user.id
+    inline_msg_id = result.inline_message_id
     try:
-        str_to_list = result.query.split(" ")
-        message = " ".join(str_to_list[:-1])
-        receiver = str_to_list[-1]
-        to_user = await bot.get_users(receiver)
-        receiver_id = to_user.id
-        to_user = to_user.__str__()
-        SESSION.add(Whispers(specific, message))
-        q = SESSION.query(Users).get(sender)
-        if q:
-            q.target_user = to_user
+        parts = result.query.split(" ")
+        message = " ".join(parts[:-1])
+        receiver = parts[-1]
+        target_user = await bot.get_users(receiver)
+        receiver_id = target_user.id
+        SESSION.add(Whispers(inline_msg_id, message))
+        user_record = SESSION.query(Users).get(sender_id)
+        if user_record:
+            user_record.target_user = str(target_user)
         else:
-            SESSION.add(Users(sender, to_user))
+            SESSION.add(Users(sender_id, str(target_user)))
         SESSION.commit()
-        await check_for_users([sender, receiver_id])
+        await check_for_users([sender_id, receiver_id])
     except (UsernameInvalid, UsernameNotOccupied, PeerIdInvalid, IndexError):
-        message = result.query
-        SESSION.add(Whispers(specific, message))
+        SESSION.add(Whispers(inline_msg_id, result.query))
         SESSION.commit()
 
 
-async def previous_target(sender):
-    q = SESSION.query(Users).get(sender)
-    if q and q.target_user is not None:
-        target_user = q.target_user
-        target_user = json.loads(target_user)
+async def previous_target(sender_id):
+    user_record = SESSION.query(Users).get(sender_id)
+    if user_record and user_record.target_user:
+        target_user = json.loads(user_record.target_user)
         receiver = target_user["id"]
-        data_list = [sender, receiver]
-        first_name = target_user["first_name"]
-        try:
-            last_name = target_user["last_name"]
-            name = first_name + last_name
-        except KeyError:
-            name = first_name
-        text1 = f"A whisper message to {name}"
-        text2 = "Only he/she can open it."
+        data_list = [sender_id, receiver]
+        name = target_user.get("first_name", "")
+        if "last_name" in target_user:
+            name += target_user["last_name"]
+        text1 = f"{name} kişisine bir fısıltı mesajı"
+        text2 = "Sadece o kişi mesajı açabilir."
         mention = f"[{name}](tg://user?id={receiver})"
         results = [
-              InlineQueryResultArticle(
-                  title=text1,
-                  input_message_content=InputTextMessageContent(
-                      f"A whisper message to {mention}" + " " + text2),
-                  url="https://t.me/StarkBots",
-                  description=text2,
-                  thumb_url="https://telegra.ph/file/33af12f457b16532e1383.jpg",
-                  reply_markup=InlineKeyboardMarkup(
-                      [
-                          [
-                              InlineKeyboardButton(
-                                  "🔐 Show Message 🔐",
-                                  callback_data=str(data_list),
-                              )
-                          ]
-                      ]
-                  ),
-              ),
-              main[0]
+            InlineQueryResultArticle(
+                title=text1,
+                input_message_content=InputTextMessageContent(
+                    f"{mention} kişisine bir fısıltı mesajı. {text2}"
+                ),
+                url="https://t.me/StarkBots",
+                description=text2,
+                thumb_url="https://telegra.ph/file/33af12f457b16532e1383.jpg",
+                reply_markup=InlineKeyboardMarkup(
+                    [[InlineKeyboardButton("🔐 Mesajı Göster 🔐", callback_data=str(data_list))]]
+                )
+            ),
+            main[0]
         ]
     else:
         results = main
     return results
 
 
-# Inline System
 @Client.on_inline_query()
 async def answer(bot: Client, query):
-    query_list = query.query.split(" ")
-    sender = query.from_user.id
-    if query.query == "":
+    query_text = query.query
+    sender_id = query.from_user.id
+    query_list = query_text.split(" ")
+
+    if not query_text:
         await query.answer(
             results=main,
-            switch_pm_text="🔒 Learn How to send Whispers",
+            switch_pm_text="🔒 Fısıltı Gönderimi Öğren",
             switch_pm_parameter="start"
         )
-    elif len(query_list) == 1:
-        sender = query.from_user.id
-        results = await previous_target(sender)
+        return
+
+    if len(query_list) == 1:
+        results = await previous_target(sender_id)
         await query.answer(
-            results,
-            switch_pm_text="🔒 Learn How to send Whispers",
+            results=results,
+            switch_pm_text="🔒 Fısıltı Gönderimi Öğren",
             switch_pm_parameter="start"
         )
-    elif len(query_list) >= 2:
+        return
+
+    if len(query_list) >= 2:
         mentioned_user = query_list[-1]
         try:
             mentioned_user = ast.literal_eval(mentioned_user)
         except (ValueError, SyntaxError):
             pass
+
         if isinstance(mentioned_user, str) and not mentioned_user.startswith("@"):
-            sender = query.from_user.id
-            results = await previous_target(sender)
+            results = await previous_target(sender_id)
             await query.answer(
-                results,
-                switch_pm_text="🔒 Learn How to send Whispers",
+                results=results,
+                switch_pm_text="🔒 Fısıltı Gönderimi Öğren",
                 switch_pm_parameter="start"
             )
             return
+
         try:
             target_user = await bot.get_users(mentioned_user)
-            sender = query.from_user.id
-            receiver = target_user.id
-            data_list = [sender, receiver]
+            receiver_id = target_user.id
+            data_list = [sender_id, receiver_id]
+            name = target_user.first_name
             if target_user.last_name:
-                name = target_user.first_name + target_user.last_name
-            else:
-                name = target_user.first_name
-            text1 = f"A whisper message to {name}"
-            text2 = "Only he/she can open it."
+                name += target_user.last_name
+            text1 = f"{name} kişisine bir fısıltı mesajı"
+            text2 = "Sadece o kişi mesajı açabilir."
             await query.answer(
                 results=[
                     InlineQueryResultArticle(
                         title=text1,
-                        input_message_content=InputTextMessageContent(f"A whisper message to {target_user.mention}" + " " + text2),
+                        input_message_content=InputTextMessageContent(
+                            f"{target_user.mention} kişisine bir fısıltı mesajı. {text2}"
+                        ),
                         url="https://t.me/StarkBots",
                         description=text2,
                         thumb_url="https://telegra.ph/file/33af12f457b16532e1383.jpg",
                         reply_markup=InlineKeyboardMarkup(
-                            [
-                                [
-                                    InlineKeyboardButton(
-                                        "🔐 Show Message 🔐",
-                                        callback_data=str(data_list),
-                                    )
-                                ]
-                            ]
-                        ),
+                            [[InlineKeyboardButton("🔐 Mesajı Göster 🔐", callback_data=str(data_list))]]
+                        )
                     )
                 ],
-                switch_pm_text="🔒 Learn How to send Whispers",
+                switch_pm_text="🔒 Fısıltı Gönderimi Öğren",
                 switch_pm_parameter="start"
             )
-            await check_for_users(receiver)
-        except (UsernameInvalid, UsernameNotOccupied, PeerIdInvalid,  IndexError):
-            sender = query.from_user.id
-            results = await previous_target(sender)
+            await check_for_users(receiver_id)
+        except (UsernameInvalid, UsernameNotOccupied, PeerIdInvalid, IndexError):
+            results = await previous_target(sender_id)
             await query.answer(
-                results,
-                switch_pm_text="🔒 Learn How to send Whispers",
+                results=results,
+                switch_pm_text="🔒 Fısıltı Gönderimi Öğren",
                 switch_pm_parameter="start"
             )
-    await check_for_users(sender)
+
+    await check_for_users(sender_id)
