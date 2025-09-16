@@ -1,60 +1,53 @@
 from pyrogram.types import InlineKeyboardButton
 
-
 class Data:
-    # Start Message
     START = """
-Hey {}.
-Welcome to {}
+Selam {}.
+{}'ye hoş geldin!
 
-I am the Master of Whisperers (like Varys in Game of Thrones).
+Ben Fısıldayanların Ustasıyım (Game of Thrones'taki Varys gibi).
 
-You can use me to send whispers to your friend in groups and channels (even if I'm not there).
-Only that friend and you will be able to read the message even though others are in same group. 
+Beni kullanarak grup veya kanallarda arkadaşına gizli mesaj gönderebilirsin (ben olmasam bile).
+Sadece sen ve o arkadaş mesajı görebilecek, diğerleri göremez.
 
-To see how to use me press 'How to Use' below.
+Nasıl kullanılacağını görmek için aşağıdaki 'Nasıl Kullanılır?' butonuna tıkla.
 
 By @StarkBots
     """
 
-    # Home Button
     home_buttons = [
-        [InlineKeyboardButton("🔒 Send a Whisper 🔒", switch_inline_query="")],
-        [InlineKeyboardButton(text="🏠 Return Home 🏠", callback_data="home")],
+        [InlineKeyboardButton("🔒 Fısılda Gönder 🔒", switch_inline_query="")],
+        [InlineKeyboardButton("🏠 Ana Sayfaya Dön 🏠", callback_data="home")],
     ]
-    # Rest Buttons
+
     buttons = [
+        [InlineKeyboardButton("🔒 Fısılda Gönder 🔒", switch_inline_query="")],
         [
-            InlineKeyboardButton("🔒 Send a Whisper 🔒", switch_inline_query="")
+            InlineKeyboardButton("Nasıl Kullanılır ❔", callback_data="help"),
+            InlineKeyboardButton("🎪 Hakkında 🎪", callback_data="about")
         ],
-        [
-            InlineKeyboardButton("How to Use ❔", callback_data="help"),
-            InlineKeyboardButton("🎪 About 🎪", callback_data="about")
-        ],
-        [InlineKeyboardButton("♥ More Amazing bots ♥", url="https://t.me/StarkBots")],
-        [InlineKeyboardButton("🎨 Support Group 🎨", url="https://t.me/StarkBotsChat")],
+        [InlineKeyboardButton("♥ Daha Fazla Harika Bot ♥", url="https://t.me/StarkBots")],
+        [InlineKeyboardButton("🎨 Destek Grubu 🎨", url="https://t.me/StarkBotsChat")],
     ]
 
-    # Help Message
     HELP = """
-Just type the message in below format in any chat.
+Mesaj göndermek için aşağıdaki formatı kullanın:
 
-`@WhisperStarkBot your_message friend_username/id`
+`@WhisperStarkBot mesajınız arkadaş_username/id`
     """
 
-    # About Message
     ABOUT = """
-**About This Bot** 
+**Bot Hakkında**
 
-Bot created by @StarkBots
+Bot oluşturucu: @StarkBots
 
-Source Code : [Click Here](https://github.com/StarkBotsIndustries/WhisperBot)
+Kaynak Kod : [Buraya Tıkla](https://github.com/StarkBotsIndustries/WhisperBot)
 
-Inspired By : nnbbot
+İlham Alan : nnbbot
 
-Framework : [Pyrogram](docs.pyrogram.org)
+Framework : [Pyrogram](https://docs.pyrogram.org)
 
-Language : [Python](www.python.org)
+Dil : [Python](https://www.python.org)
 
-Developer : @StarkProgrammer
+Geliştirici : @StarkProgrammer
     """
